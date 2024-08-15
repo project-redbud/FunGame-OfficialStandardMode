@@ -2,11 +2,13 @@
 using Milimoe.FunGame.Core.Api.Utility;
 using Milimoe.FunGame.Core.Entity;
 using Milimoe.FunGame.Core.Interface.Base;
+using Milimoe.FunGame.Core.Library.Common.Addon;
 using Milimoe.FunGame.Core.Library.Constant;
+using Milimoe.FunGame.GameModule.OfficialStandard;
 
 namespace Milimoe.FunGame.GameMode.OfficialStandard
 {
-    public class OfficialModeFastAutoServer : Core.Library.Common.Addon.GameModeServer
+    public class FastAutoServer : GameModuleServer
     {
         public override string Name => "OfficialModeFastAuto";
 
@@ -16,9 +18,9 @@ namespace Milimoe.FunGame.GameMode.OfficialStandard
 
         public override string Author => FunGameInfo.FunGame_CopyRight;
 
-        public override string DefaultMap => Maps[0];
+        public override string DefaultMap => GameModuleDepend.MapsDepend.Length > 0 ? GameModuleDepend.MapsDepend[0] : "";
 
-        public override string[] Maps => ["OfficialMap16x16"];
+        public override GameModuleDepend GameModuleDepend => GameModuleConstant.GameModuleDepend;
 
         public override Hashtable GamingMessageHandler(string username, GamingType type, Hashtable data)
         {
@@ -72,23 +74,19 @@ namespace Milimoe.FunGame.GameMode.OfficialStandard
             return result;
         }
 
-        protected Room Room { get; set; }  = General.HallInstance;
-        protected List<User> Users { get; set; } = [];
-        protected IServerModel? RoomMaster { get; set; }
-        protected Dictionary<string, IServerModel> Others { get; set; } = [];
-        protected Dictionary<string, IServerModel> All { get; set; } = [];
+        protected Room Room = General.HallInstance;
+        protected List<User> Users = [];
+        protected IServerModel? RoomMaster;
+        protected Dictionary<string, IServerModel> All = [];
 
-        public override bool StartServer(string GameMode, Room Room, List<User> Users, IServerModel RoomMasterServerModel, Dictionary<string, IServerModel> OthersServerModel, params object[] Args)
+        public override bool StartServer(string GameModule, Room Room, List<User> Users, IServerModel RoomMasterServerModel, Dictionary<string, IServerModel> ServerModels, params object[] Args)
         {
+            // 将参数转为本地属性
             this.Room = Room;
             this.Users = Users;
             RoomMaster = RoomMasterServerModel;
-            Others = OthersServerModel;
-            if (RoomMaster != null)
-            {
-                All = OthersServerModel.ToDictionary(k => k.Key, v => v.Value);
-                All.Add(RoomMaster.User.Username, RoomMaster);
-            }
+            All = ServerModels;
+            // 创建一个线程执行Test()
             TaskUtility.NewTask(TestMode).OnError(Controller.Error);
             return true;
         }
